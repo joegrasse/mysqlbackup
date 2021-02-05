@@ -1,5 +1,10 @@
 ChangeLog for mysqlbackup
 
+## 1.7 (2021-02-05)
+
+### Improvements
+  * Added dump-slave support
+
 ## 1.6 (2014-05-09)
 
 ### Bug Fixes

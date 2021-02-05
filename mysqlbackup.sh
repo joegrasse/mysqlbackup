@@ -69,6 +69,7 @@ SUDO_COMMAND=""
 PROGRAM_NAME=$0
 VERBOSE=0
 MYSQL_DATA=0
+DUMP_SLAVE=0
 declare -a MYSQL_VERSION_ARRAY
 declare -a BINLOGS
 declare -a BACKUP_FILES
@@ -80,7 +81,7 @@ declare -a WARNINGS
 SENDMAIL="/usr/sbin/sendmail"
 
 function version(){
-  echo "${PROGRAM_NAME##*/} 1.6"
+  echo "${PROGRAM_NAME##*/} 1.7"
   exit 0
 }
 
@@ -107,6 +108,7 @@ cat <<ENDOFMESSAGE
                       Example: 10D (10 Days)
     -e email        Email address to send backup status.
     -n              No data.
+    -s              Include binary log coordinates of slave's master
     -M              Backups mysql table data. For use with ddl backup mode.
     -H remote_host  Remote host to copy backup to.
     -U remote_user  User to connect to remote host.
@@ -428,6 +430,17 @@ function setup_mysqldump_options(){
   elif [[ $major -eq 4 && $minor -eq 0 && $revision -ge 2 ]] || [[ $major -eq 4 && $minor -eq 1 ]] ; then # >= 4.0.2 || >= 4.1.0
     if [ $NON_TRANSACTIONAL -eq 0 ] ; then
       MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --single-transaction"
+    fi
+  fi
+
+  # Check for dump-slave instead of master-data
+  if [ $DUMP_SLAVE -eq 1 ]; then
+    if [ $major -gt 5 ] ; then
+      master_data=" --dump-slave=2"
+    elif [ $major -eq 5 ] && [ $minor -eq 5 ] && [ $revision -ge 3 ] ; then # >= 5.5.3
+      master_data=" --dump-slave=2"
+    elif [ $major -eq 5 ] && [ $minor -gt 5 ] ; then # > 5.5
+      master_data=" --dump-slave=2"
     fi
   fi
   
@@ -1323,7 +1336,7 @@ function main(){
   local option backup_start backup_stop
   
   #check options
-  while getopts m:r:d:f:b:u:p:P:S:e:H:U:D:E:L:l:VvhnM option
+  while getopts m:r:d:f:b:u:p:P:S:e:H:U:D:E:L:l:VvhnMs option
   do
     case "$option" in
       m) MODE="$OPTARG";;
@@ -1336,6 +1349,7 @@ function main(){
       P) MYSQL_PORT="$OPTARG";;
       S) MYSQL_SOCKET="$OPTARG";;
       e) EMAIL_ADDRESS="$OPTARG";;
+      s) DUMP_SLAVE=1;;
       H) REMOTE_HOST="$OPTARG";;
       U) REMOTE_USER="$OPTARG";;
       D) REMOTE_DIR="$OPTARG";;
