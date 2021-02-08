@@ -112,7 +112,6 @@ cat <<ENDOFMESSAGE
     -r retention    [RETENTION] How long to keep the backups, D = day W = week M = month Y = year.
                       Example: 10D (10 Days)
     -e email        [EMAIL_ADDRESS] Email address to send backup status.
-    -n              No data.
     -s              [DUMP_SLAVE] Include binary log coordinates of slave's master
     -M              [MYSQL_DATA] Backups mysql table data. For use with ddl backup mode.
     -H remote_host  [REMOTE_HOST] Remote host to copy backup to.
@@ -1401,7 +1400,7 @@ function print_parameters(){
 function main(){
   local option backup_start backup_stop
   
-  local optstring="c:m:r:d:f:b:u:p:P:S:e:H:U:D:E:L:l:VvhnMs"
+  local optstring="c:m:r:d:f:b:u:p:P:S:e:H:U:D:E:L:l:VvhMs"
 
   while getopts "$optstring" option
   do

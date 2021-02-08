@@ -5,6 +5,10 @@ ChangeLog for mysqlbackup
 ### Improvements
   * Added config file support
 
+### Bug Fixes
+
+  * Removed unused command line option
+
 ## 1.7 (2021-02-05)
 
 ### Improvements
