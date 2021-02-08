@@ -80,8 +80,11 @@ declare -a WARNINGS
 # SENDMAIL program
 SENDMAIL="/usr/sbin/sendmail"
 
+# Set allowed configs to be set via config file
+VALID_CONFIGS=(MODE RETENTION BACKUP_DIR STATUS_FILE MYSQL_BINLOG_PATH MYSQL_USER MYSQL_PASSWORD MYSQL_PORT MYSQL_SOCKET EMAIL_ADDRESS DUMP_SLAVE REMOTE_HOST REMOTE_USER REMOTE_DIR MYSQL_EXECUTABLE_DIR SUDO_USER MYSQL_SLAVE_LOAD_TMPDIR MYSQL_DATA VERBOSE)
+
 function version(){
-  echo "${PROGRAM_NAME##*/} 1.7"
+  echo "${PROGRAM_NAME##*/} 1.8"
   exit 0
 }
 
@@ -89,35 +92,37 @@ function usage(){
 cat <<ENDOFMESSAGE 
   Usage: ${PROGRAM_NAME} -m mode -d backup_dir -f status_file -b binlog_dir [options]
   
+  Config file option in brackets [].
+
   Required:
-    -m mode         Backup mode.
+    -m mode         [MODE] Backup mode.
                       full - Full backup
                       inc - Incremental backup
                       ddl - Backup the database ddl statements
-    -d backup_dir   Backup Directory.
-    -f status_file  The file used to keep track of backup information. Will be created
+    -d backup_dir   [BACKUP_DIR] Backup Directory.
+    -f status_file  [STATUS_FILE] The file used to keep track of backup information. Will be created
                       if it does not exist.
-    -b binlog_dir   The directory where the MySQL binlogs are located.
+    -b binlog_dir   [MYSQL_BINLOG_PATH] The directory where the MySQL binlogs are located.
   
   Other Options:
-    -u user         MySQL user
-    -p password     MySQL password
-    -P port         MySQL port
-    -S socket       MySQL socket
-    -r retention    How long to keep the backups, D = day W = week M = month Y = year.
+    -u user         [MYSQL_USER] MySQL user
+    -p password     [MYSQL_PASSWORD] MySQL password
+    -P port         [MYSQL_PORT] MySQL port
+    -S socket       [MYSQL_SOCKET] MySQL socket
+    -r retention    [RETENTION] How long to keep the backups, D = day W = week M = month Y = year.
                       Example: 10D (10 Days)
-    -e email        Email address to send backup status.
+    -e email        [EMAIL_ADDRESS] Email address to send backup status.
     -n              No data.
-    -s              Include binary log coordinates of slave's master
-    -M              Backups mysql table data. For use with ddl backup mode.
-    -H remote_host  Remote host to copy backup to.
-    -U remote_user  User to connect to remote host.
-    -D remote_dir   Backup directory on remote host.
-    -L sudo_user    Local user to sudo the remote copy and purge commands.
-    -E mysql_dir    The directory where the MySQL executables are located.
-    -l load_dir     The directory where the slave load files are located.
+    -s              [DUMP_SLAVE] Include binary log coordinates of slave's master
+    -M              [MYSQL_DATA] Backups mysql table data. For use with ddl backup mode.
+    -H remote_host  [REMOTE_HOST] Remote host to copy backup to.
+    -U remote_user  [REMOTE_USER] User to connect to remote host.
+    -D remote_dir   [REMOTE_DIR] Backup directory on remote host.
+    -L sudo_user    [SUDO_USER] Local user to sudo the remote copy and purge commands.
+    -E mysql_dir    [MYSQL_EXECUTABLE_DIR] The directory where the MySQL executables are located.
+    -l load_dir     [MYSQL_SLAVE_LOAD_TMPDIR] The directory where the slave load files are located.
     -V              Version information.
-    -v              Verbose mode. Produces more output about what the program does.
+    -v              [VERBOSE] Verbose mode. Produces more output about what the program does.
                       This option can be given multiple times to produce more output.
                       Example: -v -v
     -h              Show this message.
@@ -1332,11 +1337,83 @@ function email_results(){
   fi
 }
 
+function in_array(){
+  local search_value="$1"
+
+  shift 1
+
+  local values=("$@")
+
+  for item in "$@"; do
+    if [[ $search_value == "$item" ]] ; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+function read_config(){
+  local config="$1"
+
+  print "Reading config file [$config]"
+
+  if [ ! -r $config ] ; then
+    print_exit "Config file [ $config ] is not readable"
+  fi
+
+  # read the config file
+  while read line; do
+    if [[ "$line" =~ ^[^#]*= ]] ; then
+      name=${line%% =*}
+      value=${line#*= }
+
+      # Check if config file value is allowed
+      in_array $name ${VALID_CONFIGS[@]}
+      if [ $? -eq 0 ] ; then
+        eval "$name"="$value"
+      else
+        print_exit "Config value [ $name ] is not allowed"
+      fi
+    fi
+  done <$config
+}
+
+function print_parameters(){
+  if [ $VERBOSE -lt 1 ] ; then
+    return
+  fi
+
+  for item in "${VALID_CONFIGS[@]}"; do
+    eval value="$"$item
+
+    # only show password if verbose level greater than 1
+    if [ $item == "MYSQL_PASSWORD" ] && [ $VERBOSE -gt 1 ] ; then
+      print "Config Value $item [$value]"
+    elif [ $item == "MYSQL_PASSWORD" ] ; then
+      print "Config Value $item [${value/*/*******}]"
+    else
+      print "Config Value $item [$value]"
+    fi
+  done
+}
+
 function main(){
   local option backup_start backup_stop
   
+  local optstring="c:m:r:d:f:b:u:p:P:S:e:H:U:D:E:L:l:VvhnMs"
+
+  while getopts "$optstring" option
+  do
+    case "$option" in
+      c) read_config "$OPTARG";;
+    esac
+  done
+
+  OPTIND=1
+
   #check options
-  while getopts m:r:d:f:b:u:p:P:S:e:H:U:D:E:L:l:VvhnMs option
+  while getopts "$optstring" option
   do
     case "$option" in
       m) MODE="$OPTARG";;
@@ -1356,6 +1433,7 @@ function main(){
       E) MYSQL_EXECUTABLE_DIR="$OPTARG";;
       L) SUDO_USER="$OPTARG";;
       l) MYSQL_SLAVE_LOAD_TMPDIR="$OPTARG";;
+      c) ;;
       M)
         MYSQL_DATA=1;;
       V)
@@ -1381,8 +1459,10 @@ function main(){
   #set umask
   umask 026
 
+  print_parameters
   check_parameters
-  
+  exit 0
+
   # get the backup dates
   backup_date
   
