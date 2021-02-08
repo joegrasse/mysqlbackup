@@ -1463,7 +1463,6 @@ function main(){
 
   print_parameters
   check_parameters
-  exit 0
 
   # get the backup dates
   backup_date
