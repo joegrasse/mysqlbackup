@@ -387,6 +387,7 @@ function setup_mysqldump_options(){
   local minor=${MYSQL_VERSION_ARRAY[1]}
   local revision=${MYSQL_VERSION_ARRAY[2]}
   local master_data=" --master-data"
+  local add_event_routine_options=0
 
   MYSQLDUMP_OPTIONS=" --opt"
   
@@ -395,25 +396,29 @@ function setup_mysqldump_options(){
   fi
   
   MYSQLDUMP_OPTIONS_MYSQL_DATA="--opt --databases mysql"
+
+  # Only need to add --events and --routines if not including mysql tables in backup
+  if [ "$MODE" = "ddl" ] && [ $MYSQL_DATA -ne 1 ] ; then
+    add_event_routine_options=1
+  fi
   
   if [ $major -ge 5 ] ; then
     if [ $minor -ge 5 ] ; then # >= 5.5
-      # Only need to add --events and --routines if not a full backup
-      if [ "$MODE" = "ddl" ]; then
+      if [ add_event_routine_options -eq 1 ] ; then
         MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --events --routines"
         MYSQLDUMP_OPTIONS_MYSQL_DATA="${MYSQLDUMP_OPTIONS_MYSQL_DATA} --events --routines"
       fi
     elif [ $minor -eq 1 ] ; then # 5.1
-      if [ $revision -ge 8 ] && [ "$MODE" = "ddl" ]; then
+      if [ $revision -ge 8 ] && [ add_event_routine_options -eq 1 ] ; then
         MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --events"
         MYSQLDUMP_OPTIONS_MYSQL_DATA="${MYSQLDUMP_OPTIONS_MYSQL_DATA} --events"
       fi
-      if [ $revision -ge 2 ] ; then
+      if [ $revision -ge 2 ] && [ add_event_routine_options -eq 1 ] ; then
         MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --routines"
         MYSQLDUMP_OPTIONS_MYSQL_DATA="${MYSQLDUMP_OPTIONS_MYSQL_DATA} --routines"
       fi
     elif [ $minor -eq 0 ] ; then # 5.0
-      if [ $revision -ge 13 ] ; then
+      if [ $revision -ge 13 ] && [ add_event_routine_options -eq 1 ] ; then
         MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --routines"
         MYSQLDUMP_OPTIONS_MYSQL_DATA="${MYSQLDUMP_OPTIONS_MYSQL_DATA} --routines"
       fi
