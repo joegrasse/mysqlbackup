@@ -3,6 +3,7 @@ ChangeLog for mysqlbackup
 ## 1.8 (Unreleased)
 
 ### Improvements
+
   * Added config file support
 
 ### Bug Fixes
@@ -12,6 +13,7 @@ ChangeLog for mysqlbackup
 ## 1.7 (2021-02-05)
 
 ### Improvements
+
   * Added dump-slave support
 
 ## 1.6 (2014-05-09)
@@ -35,6 +37,7 @@ ChangeLog for mysqlbackup
 ## 1.3 (2011-01-25)
 
 ### Improvements
+
   * Changed full backup to copy new binlogs since last backup
 
 ### Bug Fixes
