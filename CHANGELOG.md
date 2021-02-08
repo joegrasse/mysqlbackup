@@ -9,6 +9,7 @@ ChangeLog for mysqlbackup
 ### Bug Fixes
 
   * Removed unused command line option
+  * Fixed when the --events option is passed to mysqldump
 
 ## 1.7 (2021-02-05)
 

@@ -398,10 +398,13 @@ function setup_mysqldump_options(){
   
   if [ $major -ge 5 ] ; then
     if [ $minor -ge 5 ] ; then # >= 5.5
-      MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --events --routines"
-      MYSQLDUMP_OPTIONS_MYSQL_DATA="${MYSQLDUMP_OPTIONS_MYSQL_DATA} --events --routines"
+      # Only need to add --events and --routines if not a full backup
+      if [ "$MODE" = "ddl" ]; then
+        MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --events --routines"
+        MYSQLDUMP_OPTIONS_MYSQL_DATA="${MYSQLDUMP_OPTIONS_MYSQL_DATA} --events --routines"
+      fi
     elif [ $minor -eq 1 ] ; then # 5.1
-      if [ $revision -ge 8 ] ; then
+      if [ $revision -ge 8 ] && [ "$MODE" = "ddl" ]; then
         MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --events"
         MYSQLDUMP_OPTIONS_MYSQL_DATA="${MYSQLDUMP_OPTIONS_MYSQL_DATA} --events"
       fi
