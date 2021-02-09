@@ -1,6 +1,6 @@
 ChangeLog for mysqlbackup
 
-## 1.8 (Unreleased)
+## 1.8 (2021-02-09)
 
 ### Improvements
 
