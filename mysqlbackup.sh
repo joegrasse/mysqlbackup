@@ -468,7 +468,9 @@ function setup_mysqldump_options(){
     
     # if we don't want the mysql database table data then we backup all databases as well
     if [ $MYSQL_DATA -ne 1 ]; then
-      MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --all-databases"
+      #MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --all-databases"
+      # Fix for mysql bug 83259
+      MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --databases `${MYSQL} ${MYSQL_OPTIONS} --skip-column-names -Be'SHOW DATABASES'|grep -vE '^information_schema|performance_schema$'`"
     # we do want the mysql database table data so we back those up in a separte statement
     # Get the list of database minus the mysql, information_schema, and performance_schema databases
     else
@@ -476,7 +478,9 @@ function setup_mysqldump_options(){
     fi
   # Not in ddl mode, backup everything
   else
-    MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --all-databases"
+    #MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --all-databases"
+    # Fix for mysql bug 83259
+    MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --databases `${MYSQL} ${MYSQL_OPTIONS} --skip-column-names -Be'SHOW DATABASES'|grep -vE '^information_schema|performance_schema$'`"
   fi
 }
 
