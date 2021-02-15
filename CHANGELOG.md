@@ -1,5 +1,12 @@
 ChangeLog for mysqlbackup
 
+## 1.9 (2021-02-15)
+
+### Bug Fixes
+
+  * Fix for mysql bug 83259
+  * Additional fix for when the --events option is passed
+
 ## 1.8 (2021-02-09)
 
 ### Improvements
