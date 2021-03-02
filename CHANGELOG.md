@@ -1,5 +1,11 @@
 ChangeLog for mysqlbackup
 
+## 1.10 (2021-03-02)
+
+### Improvements
+
+  * Added support for GTIDs (Workaround for MySQL Bug #38303)
+
 ## 1.9 (2021-02-15)
 
 ### Bug Fixes

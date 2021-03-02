@@ -70,6 +70,7 @@ PROGRAM_NAME=$0
 VERBOSE=0
 MYSQL_DATA=0
 DUMP_SLAVE=0
+SET_GTID_PURGED=0
 declare -a MYSQL_VERSION_ARRAY
 declare -a BINLOGS
 declare -a BACKUP_FILES
@@ -84,7 +85,7 @@ SENDMAIL="/usr/sbin/sendmail"
 VALID_CONFIGS=(MODE RETENTION BACKUP_DIR STATUS_FILE MYSQL_BINLOG_PATH MYSQL_USER MYSQL_PASSWORD MYSQL_PORT MYSQL_SOCKET EMAIL_ADDRESS DUMP_SLAVE REMOTE_HOST REMOTE_USER REMOTE_DIR MYSQL_EXECUTABLE_DIR SUDO_USER MYSQL_SLAVE_LOAD_TMPDIR MYSQL_DATA VERBOSE)
 
 function version(){
-  echo "${PROGRAM_NAME##*/} 1.9"
+  echo "${PROGRAM_NAME##*/} 1.10"
   exit 0
 }
 
@@ -460,6 +461,12 @@ function setup_mysqldump_options(){
   if [ $MYSQL_LOG_BIN = "ON" ] ; then
     MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS}$master_data"
   fi
+
+  # add set-gtid-purged if needed
+  if [ $SET_GTID_PURGED -eq 1 ] ; then
+    MYSQLDUMP_OPTIONS="${MYSQLDUMP_OPTIONS} --set-gtid-purged=ON"
+    MYSQLDUMP_OPTIONS_MYSQL_DATA="${MYSQLDUMP_OPTIONS_MYSQL_DATA} --set-gtid-purged=ON"
+  fi
   
   # In ddl mode we don't want to backup the data
   # Also don't want to backup the mysql database because 
@@ -529,6 +536,12 @@ function get_mysql_variables(){
       fi
     elif [ "$variable" = "version" ] ; then
       MYSQL_VERSION="$value"
+    elif [ "$variable" = "gtid_mode" ] && [ "$value" = "ON" ] ; then
+      if [ $DUMP_SLAVE -eq 1 ] ; then
+        print_exit "The -s option can not be used when GTIDs are used"
+      else
+        SET_GTID_PURGED=1
+      fi
     fi
   done
   
